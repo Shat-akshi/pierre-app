@@ -210,13 +210,13 @@ class MarketDataCollector:
             
         return {}
     def search_news_api(self, industry, use_case, region):
-        # """Search News API for market statistics with fallback options"""
+        """Search News API for market statistics with fallback options"""
         
-        # # Try direct NewsAPI first
-        # stats = self._try_direct_news_api(industry, use_case, region)
+        # Try direct NewsAPI first
+        stats = self._try_direct_news_api(industry, use_case, region)
         
-        # if stats:
-        #     return stats
+        if stats:
+            return stats
             
         # Fallback to ScrapingBee
         """Search News API for market statistics via ScrapingBee ONLY"""
@@ -226,7 +226,7 @@ class MarketDataCollector:
     def _try_direct_news_api(self, industry, use_case, region):
         """Try direct NewsAPI call"""
         try:
-            NEWS_API_KEY = "f1eba614de4842ffa2e1fb0c31d859e5"
+            NEWS_API_KEY = "1df6a64fa0384add8a60c14ff7f941a0"
             query = f"{industry} {use_case} market size growth rate"
             
             params = {
@@ -260,7 +260,7 @@ class MarketDataCollector:
     def _try_scrapingbee_news_api(self, industry, use_case, region):
         """Try ScrapingBee fallback with proper encoding"""
         try:
-            NEWS_API_KEY = "f1eba614de4842ffa2e1fb0c31d859e5"
+            NEWS_API_KEY = "1df6a64fa0384add8a60c14ff7f941a0"
             SCRAPINGBEE_API_KEY = "CNG1OKXEMD0H2XF5N3WRTEOS9Z323G86GEW2UPYL7Y33TYGCVBQUOPMIX5K5TQU1WSW8SZT9P6LYF94S"
             
             from urllib.parse import urlencode

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: pierre-trends-backend  
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd trends && python app.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PORT
+        fromService:
+          type: web
+          name: pierre-trends-backend
+          property: port
+      - key: NEWS_API_KEY
+        sync: false

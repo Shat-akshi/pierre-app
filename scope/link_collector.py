@@ -7,7 +7,7 @@ from urllib3.util.retry import Retry
 
 class NewsAPICollector:
     def __init__(self):
-        self.api_key = "f1eba614de4842ffa2e1fb0c31d859e5"
+        self.api_key = "1df6a64fa0384add8a60c14ff7f941a0"
         self.base_url = "https://newsapi.org/v2"
         
         # Create session with retry strategy

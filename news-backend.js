@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 // Your NewsAPI key
-const NEWS_API_KEY = process.env.NEWS_API_KEY || 'f1eba614de4842ffa2e1fb0c31d859e5';
+const NEWS_API_KEY = process.env.NEWS_API_KEY || '1df6a64fa0384add8a60c14ff7f941a0';
 const NEWS_BASE_URL = 'https://newsapi.org/v2';
 
 // Enable CORS for your frontend

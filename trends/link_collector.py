@@ -110,7 +110,7 @@ class NewsAPICollector:
     
     def __init__(self):
         # 🔥 HARDCODED API KEYS (matching your app.py approach)
-        self.api_key = 'f1eba614de4842ffa2e1fb0c31d859e5'
+        self.api_key = '1df6a64fa0384add8a60c14ff7f941a0'
         self.scrapingbee_api_key = 'CNG1OKXEMD0H2XF5N3WRTEOS9Z323G86GEW2UPYL7Y33TYGCVBQUOPMIX5K5TQU1WSW8SZT9P6LYF94S'
         self.scrapingbee_base_url = 'https://app.scrapingbee.com/api/v1/'
         self.news_base_url = "https://newsapi.org/v2/everything"
@@ -298,4 +298,3 @@ class NewsAPICollector:
     except Exception as e:
         print(f"❌ ScrapingBee + NewsAPI Error (link_collector): {e}")
         return []
-
