@@ -1,9 +1,10 @@
+
 services:
   - type: web
     name: pierre-trends-backend  
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: cd trends && pip install -r requirements.txt  # Changed this line
     startCommand: cd trends && python app.py
     envVars:
       - key: FLASK_ENV
