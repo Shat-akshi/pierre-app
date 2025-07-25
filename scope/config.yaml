@@ -1,0 +1,120 @@
+# IBM Watsonx Granite API Configuration
+watsonx:
+  url: "https://us-south.ml.cloud.ibm.com/ml/v1/text/chat?version=2023-05-29"
+  project_id: "8ddd7558-5a5c-4ae2-b4e1-1434085a8e94"
+  api_key: "plZFxXY3a_SL4oocKOyG0AtpikEpwGryVbHHEohYTto7"
+  access_token: "eyJraWQiOiIyMDE5MDcyNCIsImFsZyI6IlJTMjU2In0.eyJpYW1faWQiOiJJQk1pZC02OTEwMDBZMTZRIiwiaWQiOiJJQk1pZC02OTEwMDBZMTZRIiwicmVhbG1pZCI6IklCTWlkIiwianRpIjoiOTg0YzdmZDMtOTg4My00M2M1LTlkZWYtM2FiM2E0MWRjM2EwIiwiaWRlbnRpZmllciI6IjY5MTAwMFkxNlEiLCJnaXZlbl9uYW1lIjoiQW51c2hrYSIsImZhbWlseV9uYW1lIjoiU3JpdmFzdGF2YSIsIm5hbWUiOiJBbnVzaGthIFNyaXZhc3RhdmEiLCJlbWFpbCI6ImFudXNoa2Euc3JpdmFzdGF2YTQyQGlibS5jb20iLCJzdWIiOiJhbnVzaGthLnNyaXZhc3RhdmE0MkBpYm0uY29tIiwiYXV0aG4iOnsic3ViIjoiYW51c2hrYS5zcml2YXN0YXZhNDJAaWJtLmNvbSIsImlhbV9pZCI6IklCTWlkLTY5MTAwMFkxNlEiLCJuYW1lIjoiQW51c2hrYSBTcml2YXN0YXZhIiwiZ2l2ZW5fbmFtZSI6IkFudXNoa2EiLCJmYW1pbHlfbmFtZSI6IlNyaXZhc3RhdmEiLCJlbWFpbCI6ImFudXNoa2Euc3JpdmFzdGF2YTQyQGlibS5jb20ifSwiYWNjb3VudCI6eyJ2YWxpZCI6dHJ1ZSwiYnNzIjoiNWM3MTY1ZWNhMjdiNGQ1MzhjZTcxZGRhM2UzYzY3OTkiLCJpbXNfdXNlcl9pZCI6IjEzOTE0NDA3IiwiZnJvemVuIjp0cnVlLCJpc19lbnRlcnByaXNlX2FjY291bnQiOmZhbHNlLCJlbnRlcnByaXNlX2lkIjoiZWU1NzVjNTc3ODc2NGQ0MDkxNTVhYTM1NzgwZWM4ZDEiLCJpbXMiOiIyOTQ4MzU3In0sIm1mYSI6eyJpbXMiOnRydWV9LCJpYXQiOjE3NTI2MzE5OTAsImV4cCI6MTc1MjYzNTU5MCwiaXNzIjoiaHR0cHM6Ly9pYW0uY2xvdWQuaWJtLmNvbS9pZGVudGl0eSIsImdyYW50X3R5cGUiOiJ1cm46aWJtOnBhcmFtczpvYXV0aDpncmFudC10eXBlOmFwaWtleSIsInNjb3BlIjoiaWJtIG9wZW5pZCIsImNsaWVudF9pZCI6ImRlZmF1bHQiLCJhY3IiOjEsImFtciI6WyJwd2QiXX0.qN0uyadCR1hrS3BuLMxY4Y_CTmcXppgbL2hcL3LDDACx_oRBr2bga4SGpvStMt0s2br5LWz4TYNonsXKUh5AY1CrPvyM2Gdzc4MykAb-t8J4At27dXq6NSB5UMe1FmigfY_9DymQ87fWrehZaXqmOLNOagRochzI4Ck3iNEEKl7RaTScvRO7kFxhu8ceDe1vGRnxEzWwdjYIMP0wsx0ltA0n9NsdSznFXfqTE9k20n3ZSCPbzQs2-jFewigUPn2v6MxWdbkc7l_10TKcKXXka0Sbj13er79hoEi6HdCwIewgnTw8nr60mAuTFRHjpeam_IRPgWIpLLWFv_OAQ_h45w"
+  model_id: "ibm/granite-3-8b-instruct"
+
+
+# LLM generation parameters (aligned with Watsonx API)
+llm_params:
+  max_tokens: 2000
+  temperature: 0.7
+  top_p: 1.0
+  frequency_penalty: 0
+  presence_penalty: 0
+  # Removed top_k as it's not in the Watsonx API parameters
+
+# Messages structure for Granite model (using 'messages' format)
+messages_template:
+  - role: "system"
+    content: |
+      You are Granite, an AI language model developed by IBM. You are an expert business analyst specializing in IBM case studies and client success stories. Your role is to extract key business metrics and match case studies to client requirements.
+
+      EXTRACTION RULES:
+      1. Extract these metrics from case studies:
+         - Use Case/Solution Type (e.g., AI/ML, Cloud Migration, Data Analytics, Automation, etc.)
+         - Business Outcomes (quantified results like cost savings, efficiency gains, revenue increase)
+         - Region/Geography (Americas, EMEA, APAC, or specific countries)
+         - Industry (Healthcare, Financial Services, Manufacturing, Retail, etc.)
+         - Company Size (Enterprise, Mid-market, SMB)
+         - Technologies Used (specific IBM products/services)
+         - Key Metrics (percentages, dollar amounts, time savings, etc.)
+
+      2. When filtering case studies:
+         - Match client requirements to relevant case studies
+         - Prioritize exact matches but include similar industries/use cases
+         - Provide quantified business outcomes when available
+         - Rank results by relevance to client's industry/use case/region
+
+      3. Response format:
+         - Provide matched case studies with extracted metrics
+         - Include confidence scores for matches
+         - Highlight most relevant business outcomes
+         - Suggest additional related case studies
+
+  - role: "user"
+    content: "Insert your case study text or client query here"
+
+# Request body template for Watsonx API
+request_body_template:
+  messages: []  # Will be populated with messages_template
+  project_id: "b860e975-9c0a-4094-9203-0f094b476c18"
+  model_id: "ibm/granite-3-8b-instruct"
+  frequency_penalty: 0
+  max_tokens: 2000
+  presence_penalty: 0
+  temperature: 0.7
+  top_p: 1.0
+
+# Headers template for Watsonx API
+headers_template:
+  Accept: "application/json"
+  Content-Type: "application/json"
+  Authorization: "Bearer {access_token}"  # Will be populated with actual token
+
+# Filter Options (optional, if your app supports filtering)
+filter_options:
+  industries:
+    - Financial Services
+    - Healthcare
+    - Manufacturing
+    - Retail
+    - Telecommunications
+    - Government
+    - Energy & Utilities
+    - Transportation
+    - Education
+    - Media & Entertainment
+  
+  use_cases:
+    - AI & Machine Learning
+    - Cloud Migration
+    - Data Analytics & Insights
+    - Process Automation
+    - Cybersecurity
+    - Supply Chain Optimization
+    - Customer Experience
+    - Digital Transformation
+    - Infrastructure Modernization
+    - Sustainability
+  
+  regions:
+    - Americas
+    - EMEA
+    - APAC
+    - North America
+    - Europe
+    - Asia Pacific
+    - Latin America
+    - Middle East & Africa
+
+# Vectorstore (embedding) configuration
+vectorstore_params:
+  chunk_size: 800
+  chunk_overlap: 100
+  embedding_model_name: "all-MiniLM-L6-v2"
+
+# Case Study loaders
+case_study_loaders:
+  pdf_directory: "ibm_case_stories/"
+  processed_data_path: "clean_case_studies.json"
+  embeddings_path: "metricsextracted_embeddings.pkl" 
+
+# Analysis parameters
+analysis_params:
+  top_k_retrievals: 15
+  rerank_top_n: 8
+  similarity_threshold: 0.6
+  max_case_studies_return: 5
