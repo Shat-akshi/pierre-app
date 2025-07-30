@@ -88,79 +88,20 @@ class GraniteAPI:
         
         return response.json()["choices"][0]["message"]["content"].strip()
 
-# class NewsAPIScraper:
-#     """Scraper using NewsAPI for getting company news"""
-    
-#     def __init__(self, api_key: str):
-#         self.api_key = api_key
-#         self.base_url = "https://newsapi.org/v2"
-        
-#     def search_company_news(self, company_name: str, days_back: int = 7) -> List[Dict]:
-#         """Search for news articles about a specific company"""
-        
-#         # Calculate date range
-#         end_date = datetime.now()
-#         start_date = end_date - timedelta(days=days_back)
-        
-#         # Prepare search query with variations
-#         query = f'"{company_name}" OR "{company_name} Inc" OR "{company_name} Corp" OR "{company_name} Ltd"'
-        
-#         params = {
-#             'q': query,
-#             'from': start_date.strftime('%Y-%m-%d'),
-#             'to': end_date.strftime('%Y-%m-%d'),
-#             'sortBy': 'publishedAt',
-#             'language': 'en',
-#             'pageSize': 50,
-#             'apiKey': self.api_key
-#         }
-        
-#         try:
-#             response = requests.get(f"{self.base_url}/everything", params=params)
-#             response.raise_for_status()
-#             data = response.json()
-            
-#             if data['status'] == 'ok':
-#                 return data['articles']
-#             else:
-#                 logger.error(f"NewsAPI error: {data.get('message', 'Unknown error')}")
-#                 return []
-                
-#         except requests.exceptions.RequestException as e:
-#             logger.error(f"Request failed: {e}")
-#             return []
 class NewsAPIScraper:
-    """ScrapingBee-powered NewsAPI scraper for getting company news"""
+    """Scraper using NewsAPI for getting company news"""
     
     def __init__(self, api_key: str):
-        # 🔥 HARDCODED API KEYS (consistent with your approach)
-        self.api_key = '1df6a64fa0384add8a60c14ff7f941a0'
-        self.scrapingbee_api_key = 'CNG1OKXEMD0H2XF5N3WRTEOS9Z323G86GEW2UPYL7Y33TYGCVBQUOPMIX5K5TQU1WSW8SZT9P6LYF94S'
-        self.scrapingbee_base_url = 'https://app.scrapingbee.com/api/v1/'
-        self.news_base_url = "https://newsapi.org/v2"
+        self.api_key = api_key
+        self.base_url = "https://newsapi.org/v2"
         
-        print(f"✅ NewsAPIScraper (companynews) initialized with ScrapingBee")
-
-    def create_scrapingbee_proxy_url(self, news_api_url):
-        """Create ScrapingBee proxy URL for NewsAPI calls"""
-        from urllib.parse import urlencode
-        
-        scrapingbee_params = {
-            'api_key': self.scrapingbee_api_key,
-            'url': news_api_url,
-            'render_js': 'false',
-            'premium_proxy': 'false'
-        }
-        
-        return f"{self.scrapingbee_base_url}?{urlencode(scrapingbee_params)}"
-
     def search_company_news(self, company_name: str, days_back: int = 7) -> List[Dict]:
-        """Search for news articles about a specific company via ScrapingBee"""
+        """Search for news articles about a specific company"""
         
         # Calculate date range
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days_back)
-
+        
         # Prepare search query with variations
         query = f'"{company_name}" OR "{company_name} Inc" OR "{company_name} Corp" OR "{company_name} Ltd"'
         
@@ -173,32 +114,23 @@ class NewsAPIScraper:
             'pageSize': 50,
             'apiKey': self.api_key
         }
-
+        
         try:
-            # 🔄 BUILD COMPLETE NEWSAPI URL
-            from urllib.parse import urlencode
-            full_news_api_url = f"{self.news_base_url}/everything?{urlencode(params)}"
-            
-            # 🆕 CREATE SCRAPINGBEE PROXY URL
-            proxy_url = self.create_scrapingbee_proxy_url(full_news_api_url)
-            
-            print(f"📡 Using ScrapingBee proxy for company news search (companynews)")
-            
-            # 🔄 MAKE REQUEST VIA SCRAPINGBEE INSTEAD OF DIRECT
-            response = requests.get(proxy_url, timeout=15)
+            response = requests.get(f"{self.base_url}/everything", params=params)
             response.raise_for_status()
             data = response.json()
             
             if data['status'] == 'ok':
-                logger.info(f"✅ Retrieved {len(data['articles'])} articles for {company_name} via ScrapingBee")
                 return data['articles']
             else:
                 logger.error(f"NewsAPI error: {data.get('message', 'Unknown error')}")
                 return []
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"ScrapingBee + NewsAPI request failed: {e}")
+            logger.error(f"Request failed: {e}")
             return []
+
+
 
 
 class WebScraper:

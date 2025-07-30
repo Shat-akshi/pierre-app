@@ -218,10 +218,7 @@ class MarketDataCollector:
         if stats:
             return stats
             
-        # Fallback to ScrapingBee
-        """Search News API for market statistics via ScrapingBee ONLY"""
-        print("📡 Using ScrapingBee ONLY for NewsAPI market statistics...")
-        return self._try_scrapingbee_news_api(industry, use_case, region)
+       
 
     def _try_direct_news_api(self, industry, use_case, region):
         """Try direct NewsAPI call"""
@@ -257,70 +254,7 @@ class MarketDataCollector:
             print(f"❌ Direct NewsAPI market search error: {e}")
             return {}
 
-    def _try_scrapingbee_news_api(self, industry, use_case, region):
-        """Try ScrapingBee fallback with proper encoding"""
-        try:
-            NEWS_API_KEY = "1df6a64fa0384add8a60c14ff7f941a0"
-            SCRAPINGBEE_API_KEY = "CNG1OKXEMD0H2XF5N3WRTEOS9Z323G86GEW2UPYL7Y33TYGCVBQUOPMIX5K5TQU1WSW8SZT9P6LYF94S"
-            
-            from urllib.parse import urlencode
-            
-            query = f"{industry} {use_case} market size growth rate"
-            
-            # Build NewsAPI URL
-            params = {
-                'q': query,
-                'apiKey': NEWS_API_KEY,
-                'sortBy': 'publishedAt',
-                'pageSize': 20,
-                'language': 'en'
-            }
-            
-            news_api_url = f"https://newsapi.org/v2/everything?{urlencode(params)}"
-            
-            # Create ScrapingBee proxy URL with proper encoding
-            scrapingbee_params = {
-                'api_key': SCRAPINGBEE_API_KEY,
-                'url': news_api_url,
-                'render_js': 'false',
-                'premium_proxy': 'false',
-                'country_code': 'us'
-            }
-            
-            proxy_url = f"https://app.scrapingbee.com/api/v1/?{urlencode(scrapingbee_params)}"
-            
-            print(f"📡 Using ScrapingBee proxy for market statistics")
-            
-            # Add proper headers
-            headers = {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            
-            # Make request via ScrapingBee
-            response = requests.get(proxy_url, headers=headers, timeout=20)
-            
-            print(f"📊 ScrapingBee response status: {response.status_code}")
-            
-            if response.status_code == 200:
-                data = response.json()
-                
-                if data.get('status') == 'ok':
-                    articles = data.get('articles', [])
-                    stats = self._extract_market_stats_from_articles(articles)
-                    print(f"✅ ScrapingBee market data success: {len(articles)} articles processed")
-                    return stats
-                else:
-                    print(f"❌ NewsAPI via ScrapingBee error: {data.get('message', 'Unknown error')}")
-            else:
-                print(f"❌ ScrapingBee request failed with status: {response.status_code}")
-                
-            return {}
-                
-        except Exception as e:
-            print(f"❌ Error searching News API via ScrapingBee: {str(e)}")
-            return {}
-
+   
     def _extract_market_stats_from_articles(self, articles):
         """Extract market statistics from articles"""
         stats = {}

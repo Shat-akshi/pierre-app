@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Download, ChevronLeft, ChevronRight, X, Search, Building2 } from 'lucide-react';
 
@@ -10,7 +8,8 @@ const TrendAnalyzer = () => {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [apiHealth, setApiHealth] = useState(null);
-  
+  const [newsApiHealth, setNewsApiHealth] = useState(null);
+
   // Competitor landscape state
   const [showCompetitorLandscape, setShowCompetitorLandscape] = useState(false);
   const [competitorLandscape, setCompetitorLandscape] = useState(null);
@@ -31,11 +30,6 @@ const TrendAnalyzer = () => {
   const [showPPTPreview, setShowPPTPreview] = useState(false);
   const [pptData, setPptData] = useState(null);
   
-  // const [filters, setFilters] = useState({
-  //   industry: 'Financial services',
-  //   use_case: 'AI & Machine Learning',
-  //   region: 'Asia'
-  // });
   const [filters, setFilters] = useState({
     industry: '',
     use_case: '',
@@ -134,25 +128,52 @@ const TrendAnalyzer = () => {
   // Check API health on component mount
   useEffect(() => {
     checkApiHealth();
+    checkNewsApiHealth();
   }, []);
 
   const checkApiHealth = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/health');
+      const response = await fetch('/api/trends/health');
       const data = await response.json();
       setApiHealth(data);
     } catch (err) {
       setApiHealth({ status: 'error', message: 'API not reachable' });
     }
   };
+  
 
+  const checkNewsApiHealth = async () => {
+    try {
+      const response = await fetch('/api/trends/test-news-api');
+      const data = await response.json();
+      if (response.ok) {
+        setNewsApiHealth({ 
+          status: 'healthy', 
+          message: `News API working - ${data.articles_found} articles found`,
+          articles_found: data.articles_found 
+        });
+      } else {
+        setNewsApiHealth({ 
+          status: 'error', 
+          message: data.error || 'News API failed' 
+        });
+      }
+    } catch (err) {
+      setNewsApiHealth({ 
+        status: 'error', 
+        message: 'News API not reachable or invalid key' 
+      });
+    }
+  };
+
+  
   const testComponents = async () => {
     setLoading(true);
     setError(null);
     simulateLoadingPhases();
     
     try {
-      const response = await fetch('http://localhost:5000/api/test-components');
+      const response = await fetch('/api/trends/test-components');
       const data = await response.json();
       setResults({ type: 'test', data });
     } catch (err) {
@@ -176,7 +197,7 @@ const TrendAnalyzer = () => {
     simulateLoadingPhases();
 
     try {
-      const response = await fetch('http://localhost:5000/api/analyze-trends', {
+      const response = await fetch('/api/trends/analyze-trends', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -287,7 +308,7 @@ const TrendAnalyzer = () => {
     setLoadingPhase('Analyzing competitor landscape...');
     
     try {
-      const response = await fetch('http://localhost:5000/api/generate-competitor-landscape', {
+      const response = await fetch('/api/trends/generate-competitor-landscape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -327,7 +348,7 @@ const TrendAnalyzer = () => {
     setLoadingPhase(`Analyzing trends for ${companyName}...`);
     
     try {
-      const response = await fetch('http://localhost:5000/api/company-insights', {
+      const response = await fetch('/api/trends/company-insights', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -358,7 +379,7 @@ const TrendAnalyzer = () => {
 
   const clearCache = async () => {
     try {
-      await fetch('http://localhost:5000/api/clear-cache', {
+      await fetch('/api/trends/clear-cache', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -404,7 +425,7 @@ const TrendAnalyzer = () => {
     setLoadingPhase('Generating PowerPoint presentation with charts and statistics...');
     
     try {
-      const response = await fetch('http://localhost:5000/api/generate-ppt', {
+      const response = await fetch('/api/trends/generate-ppt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -453,101 +474,82 @@ const TrendAnalyzer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white">
+    <div className="min-h-screen bg-[#f4f4f4] text-stone-800"> {/* ✅ CHANGED: Creamier off-white background */}
       <div className="max-w-7xl mx-auto p-6">
-        {/* Centered Gradient Heading */}
-        <div className="text-center mb-12 py-8">
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-400 bg-clip-text text-transparent mb-4 drop-shadow-lg">
-            Market Trend Analyzer
-          </h1>
-
-          <div className="w-32 h-1.5 bg-gradient-to-r from-blue-400 to-cyan-400 mx-auto mb-6 rounded-full shadow-lg"></div>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-            Analyze market trends using AI-powered insights from financial news sources
-          </p>
-        </div>
-
-        {/* API Health Status */}
-        <div className="mb-8 p-5 rounded-lg border bg-gray-900/70 border-gray-700 shadow-md backdrop-blur-sm transition-all duration-300">
-          <h3 className="font-semibold mb-2 text-white text-lg flex items-center gap-2">
-            <span className="text-blue-400">🔌</span> API Status
-          </h3>
-          {apiHealth ? (
-            <div className={`flex items-center gap-2 ${
-              apiHealth.status === 'healthy' ? 'text-blue-400' : 'text-red-400'
-            }`}>
-              <div className={`w-3 h-3 rounded-full ${
-                apiHealth.status === 'healthy' ? 'bg-blue-400' : 'bg-red-400'
-              }`} />
-              <span>{apiHealth.message}</span>
+        
+        {/* Dashboard-Style Header */}
+        <div className="mb-8">
+          <div className="flex flex-col items-center justify-center mb-6 text-center">
+            <div className="flex items-center gap-4 mb-4">
+              <div>
+                <h1 className="text-5xl font-mono bg-gradient-to-r from-blue-500 to-blue-500 bg-clip-text text-transparent">Market Trend Analyzer</h1>
+                
+              </div>
             </div>
-          ) : (
-            <div className="text-gray-400">Checking API status...</div>
-          )}
+          </div>
         </div>
 
         {/* Filters */}
-<div className="mb-8 p-5 rounded-lg bg-gray-900/70 border border-gray-700 shadow-md backdrop-blur-sm">
-  <h3 className="font-semibold mb-4 text-white text-lg flex items-center gap-2">
-    <span className="text-blue-400">🔍</span>
-    Analysis Filters
-  </h3>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div>
-      <label className="block text-sm font-medium mb-1 text-gray-300">
-        Industry
-      </label>
-      <select
-        value={filters.industry}
-        onChange={(e) => handleFilterChange('industry', e.target.value)}
-        className="w-full p-2 border rounded-md transition-colors bg-black border-gray-600 text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-      >
-        <option value="" disabled>Select Industry</option>
-        <option value="Financial services">Financial services</option>
-        <option value="Technology">Technology</option>
-        <option value="Healthcare">Healthcare</option>
-      </select>
-    </div>
-    
-    <div>
-      <label className="block text-sm font-medium mb-1 text-gray-300">
-        Use Case
-      </label>
-      <select
-        value={filters.use_case}
-        onChange={(e) => handleFilterChange('use_case', e.target.value)}
-        className="w-full p-2 border rounded-md transition-colors bg-black border-gray-600 text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-      >
-        <option value="" disabled>Select Use Case</option>
-        <option value="AI & Machine Learning">AI & Machine Learning</option>
-        <option value="Automation">Automation</option>
-      </select>
-    </div>
-    
-    <div>
-      <label className="block text-sm font-medium mb-1 text-gray-300">
-        Region
-      </label>
-      <select
-        value={filters.region}
-        onChange={(e) => handleFilterChange('region', e.target.value)}
-        className="w-full p-2 border rounded-md transition-colors bg-black border-gray-600 text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-      >
-        <option value="" disabled>Select Region</option>
-        <option value="Asia">Asia</option>
-        <option value="Europe">Europe</option>
-      </select>
-    </div>
-  </div>
-</div>
-
+        <div className="mb-8 p-5 rounded-lg bg-stone-100/70 border-2 border-stone-300/50 shadow-md backdrop-blur-sm">
+          <h3 className="font-bold mb-5 text-stone-800 text-lg flex items-center gap-2">
+            
+            Filters
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-stone-700">
+                Industry
+              </label>
+              <select
+                value={filters.industry}
+                onChange={(e) => handleFilterChange('industry', e.target.value)}
+                className="w-full p-2 border rounded-md transition-colors bg-white border-stone-400 text-stone-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="" disabled>Select Industry</option>
+                <option value="Financial services">Financial services</option>
+                <option value="Technology">Technology</option>
+                <option value="Healthcare">Healthcare</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1 text-stone-700">
+                Use Case
+              </label>
+              <select
+                value={filters.use_case}
+                onChange={(e) => handleFilterChange('use_case', e.target.value)}
+                className="w-full p-2 border rounded-md transition-colors bg-white border-stone-400 text-stone-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="" disabled>Select Use Case</option>
+                <option value="AI & Machine Learning">AI & Machine Learning</option>
+                <option value="Automation">Automation</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1 text-stone-700">
+                Region
+              </label>
+              <select
+                value={filters.region}
+                onChange={(e) => handleFilterChange('region', e.target.value)}
+                className="w-full p-2 border rounded-md transition-colors bg-white border-stone-400 text-stone-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="" disabled>Select Region</option>
+                <option value="Asia">Asia</option>
+                <option value="Europe">Europe</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* Action Buttons */}
         <div className="mb-8 flex gap-5 flex-wrap justify-center">
           <button
             onClick={testComponents}
             disabled={loading}
-            className="px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40"
+            className="px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 bg-blue-400 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40"
           >
             {loading ? '🔄 Testing...' : 'Test Components'}
           </button>
@@ -555,7 +557,7 @@ const TrendAnalyzer = () => {
           <button
             onClick={runAnalysis}
             disabled={loading}
-            className="px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-400/40"
+            className="px-6 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 bg-blue-400 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-400/40"
           >
             {loading ? '🔄 Analyzing...' : 'Run Full Analysis'}
           </button>
@@ -563,7 +565,7 @@ const TrendAnalyzer = () => {
           <button
             onClick={clearCache}
             disabled={loading}
-            className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
+            className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 bg-stone-400 hover:bg-stone-500 text-white border border-stone-500"
           >
             Clear Cache
           </button>
@@ -571,42 +573,42 @@ const TrendAnalyzer = () => {
 
         {/* Enhanced Loading State */}
         {loading && (
-          <div className="text-center py-8 px-4 rounded-lg border bg-gray-900/50 border-gray-700 backdrop-blur-sm">
+          <div className="text-center py-8 px-4 rounded-lg border bg-stone-100/70 border-stone-300 backdrop-blur-sm">
             <div className="flex flex-col items-center">
               <div className="relative">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-400"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-blue-400 text-xs">{loadingProgress}%</span>
+                  <span className="text-blue-600 text-xs">{loadingProgress}%</span>
                 </div>
               </div>
               
-              <div className="mt-6 mb-2 text-lg font-medium text-blue-300">{loadingPhase}</div>
+              <div className="mt-6 mb-2 text-lg font-medium text-blue-700">{loadingPhase}</div>
               
-              <div className="w-full max-w-md bg-gray-800 rounded-full h-2.5 mb-4">
-                <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-2.5 rounded-full transition-all duration-500" 
+              <div className="w-full max-w-md bg-stone-200 rounded-full h-2.5 mb-4">
+                <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full transition-all duration-500" 
                      style={{ width: `${loadingProgress}%` }}></div>
               </div>
               
-              <p className="text-gray-400 text-sm mt-2">Processing time may vary (typically 1-3 minutes)</p>
-              <div className="mt-4 grid grid-cols-5 gap-2 text-xs text-gray-400">
+              <p className="text-stone-600 text-sm mt-2">Processing time may vary (typically 1-3 minutes)</p>
+              <div className="mt-4 grid grid-cols-5 gap-2 text-xs text-stone-600">
                 <div className="flex flex-col items-center">
-                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 20 ? 'bg-blue-400' : 'bg-gray-600'}`}></div>
+                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 20 ? 'bg-blue-500' : 'bg-stone-400'}`}></div>
                   <span>Collecting</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 40 ? 'bg-blue-400' : 'bg-gray-600'}`}></div>
+                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 40 ? 'bg-blue-500' : 'bg-stone-400'}`}></div>
                   <span>Scraping</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 60 ? 'bg-blue-400' : 'bg-gray-600'}`}></div>
+                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 60 ? 'bg-blue-500' : 'bg-stone-400'}`}></div>
                   <span>Filtering</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 80 ? 'bg-blue-400' : 'bg-gray-600'}`}></div>
+                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 80 ? 'bg-blue-500' : 'bg-stone-400'}`}></div>
                   <span>Analyzing</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 95 ? 'bg-blue-400' : 'bg-gray-600'}`}></div>
+                  <div className={`w-2 h-2 rounded-full mb-1 ${loadingProgress >= 95 ? 'bg-blue-500' : 'bg-stone-400'}`}></div>
                   <span>Insights</span>
                 </div>
               </div>
@@ -616,9 +618,9 @@ const TrendAnalyzer = () => {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 p-4 rounded-lg border bg-red-900/30 border-red-500/50 backdrop-blur-sm">
-            <h3 className="font-semibold mb-2 text-red-400">❌ Error</h3>
-            <p className="text-red-300">{error}</p>
+          <div className="mb-6 p-4 rounded-lg border bg-red-100/70 border-red-400/50 backdrop-blur-sm">
+            <h3 className="font-semibold mb-2 text-red-700">❌ Error</h3>
+            <p className="text-red-600">{error}</p>
           </div>
         )}
 
@@ -626,9 +628,9 @@ const TrendAnalyzer = () => {
         {results && (
           <div className="space-y-6">
             {results.type === 'test' && (
-              <div className="p-4 rounded-lg border bg-blue-900/30 border-blue-500/50 backdrop-blur-sm">
-                <h3 className="font-semibold mb-4 text-blue-400">🧪 Component Test Results</h3>
-                <pre className="text-sm whitespace-pre-wrap text-blue-300">
+              <div className="p-4 rounded-lg border bg-blue-100/70 border-blue-400/50 backdrop-blur-sm">
+                <h3 className="font-semibold mb-4 text-blue-700">🧪 Component Test Results</h3>
+                <pre className="text-sm whitespace-pre-wrap text-blue-600">
                   {JSON.stringify(results.data, null, 2)}
                 </pre>
               </div>
@@ -637,17 +639,17 @@ const TrendAnalyzer = () => {
             {results.type === 'analysis' && (
               <div className="space-y-8">
                 {/* Stats */}
-                <div className="p-5 rounded-lg border bg-blue-900/30 border-blue-700/50 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-blue-900/40">
-                  <h3 className="font-semibold mb-3 text-blue-300 text-lg flex items-center gap-2">
-                    <span className="text-blue-200">📈</span> Analysis Statistics
+                <div className="p-5 rounded-lg border bg-blue-100/70 border-blue-300/50 shadow-lg backdrop-blur-sm transition-all duration-300 hover:bg-blue-100/80">
+                  <h3 className="font-semibold mb-3 text-blue-700 text-lg flex items-center gap-2">
+                    <span className="text-blue-600">📈</span> Analysis Statistics
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-blue-300">Articles Processed:</span>
+                      <span className="text-blue-700">Articles Processed: 15</span>
                       <span className="font-semibold ml-2">{results.data.stats.total_articles_fetched}</span>
                     </div>
                     <div>
-                      <span className="text-blue-300">Analysis Time:</span>
+                      <span className="text-blue-700">Analysis Time:</span>
                       <span className="font-semibold ml-2">{results.data.stats.timing.total.toFixed(1)}s</span>
                     </div>
                   </div>
@@ -655,24 +657,24 @@ const TrendAnalyzer = () => {
 
                 {/* Aggregate Insights Section */}
                 {results.data.aggregate_insights && (
-                  <div className="p-6 rounded-xl border bg-gradient-to-br from-blue-900/40 to-blue-800/60 border-blue-600/30 shadow-xl backdrop-blur-sm">
-                    <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-blue-200 border-b border-blue-700/40 pb-3">
-                      <span className="text-blue-300">🎯</span> Sales Pitch Insights: {results.data.aggregate_insights.industry} + {results.data.aggregate_insights.use_case} in {results.data.aggregate_insights.region}
+                  <div className="p-6 rounded-xl border bg-gradient-to-br from-blue-100/60 to-blue-200/80 border-blue-300/50 shadow-xl backdrop-blur-sm">
+                    <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-blue-800 border-b border-blue-400/40 pb-3">
+                      <span className="text-blue-600">🎯</span> Sales Pitch Insights: {results.data.aggregate_insights.industry} + {results.data.aggregate_insights.use_case} in {results.data.aggregate_insights.region}
                     </h3>
                     
-                    <div className="text-sm mb-5 text-blue-300 italic">
+                    <div className="text-sm mb-5 text-blue-700 italic">
                       Based on all articles scraped
                     </div>
                     
                     {/* Parse and display insights as cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {Object.entries(parseInsights(results.data.aggregate_insights.insights)).map(([key, section], index) => (
-                        <div key={key} className="p-5 rounded-lg shadow-lg bg-black/60 border-2 border-white hover:border-blue-500/60 transition-all duration-300 transform hover:-translate-y-1">
-                          <h4 className="font-bold text-white mb-3 pb-2 border-b border-white">{section.title}</h4>
+                        <div key={key} className="p-5 rounded-lg shadow-lg bg-stone-50/90 border-2 border-stone-300 hover:border-blue-400/60 transition-all duration-300 transform hover:-translate-y-1">
+                          <h4 className="font-bold text-stone-800 mb-3 pb-2 border-b border-stone-400">{section.title}</h4>
                           
-                          <ul className="list-disc pl-5 space-y-2 text-gray-100">
+                          <ul className="list-disc pl-5 space-y-2 text-stone-700">
                             {section.points.map((point, i) => (
-                              <li key={i} className="text-gray-200 text-base md:text-lg leading-relaxed" 
+                              <li key={i} className="text-stone-700 text-base md:text-lg leading-relaxed" 
                                   dangerouslySetInnerHTML={{ __html: formatText(point) }} />
                             ))}
                           </ul>
@@ -680,7 +682,7 @@ const TrendAnalyzer = () => {
                       ))}
                     </div>
                     
-                    <div className="mt-7 text-sm p-4 rounded-lg text-blue-200 bg-blue-900/50 backdrop-blur-sm border border-blue-700/30">
+                    <div className="mt-7 text-sm p-4 rounded-lg text-blue-800 bg-blue-200/50 backdrop-blur-sm border border-blue-400/30">
                       <p className="flex items-center gap-2">
                         <span className="text-lg">💡</span> 
                         <strong>Sales Tip:</strong> Use these insights to understand market pain points and position IBM solutions effectively in your pitch!
@@ -691,7 +693,7 @@ const TrendAnalyzer = () => {
                       <button
                         onClick={generateCompetitorLandscape}
                         disabled={loadingCompetitors || results.data.results.length < 2}
-                        className="px-6 py-3 rounded-lg disabled:opacity-50 transition-all duration-300 bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-600/25 hover:shadow-purple-500/40 flex items-center gap-2 font-medium"
+                        className="px-6 py-3 rounded-lg disabled:opacity-50 transition-all duration-300 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40 flex items-center gap-2 font-medium" /* ✅ CHANGED: From purple to blue */
                       >
                         {loadingCompetitors ? (
                           <>
@@ -711,23 +713,23 @@ const TrendAnalyzer = () => {
 
                 {/* Competitor Landscape */}
                 {showCompetitorLandscape && competitorLandscape && (
-                  <div className="p-6 rounded-xl border bg-gradient-to-br from-purple-900/40 to-indigo-900/60 border-purple-600/30 shadow-xl backdrop-blur-sm">
-                    <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-purple-200 border-b border-purple-700/40 pb-3">
-                      <span className="text-purple-300">🏆</span> Competitor Landscape: {competitorLandscape.industry} + {competitorLandscape.use_case} in {competitorLandscape.region}
+                  <div className="p-6 rounded-xl border bg-gradient-to-br from-blue-100/60 to-blue-200/80 border-blue-300/50 shadow-xl backdrop-blur-sm"> {/* ✅ CHANGED: From purple to blue */}
+                    <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-blue-800 border-b border-blue-400/40 pb-3"> {/* ✅ CHANGED: From purple to blue */}
+                      <span className="text-blue-600">🏆</span> Competitor Landscape: {competitorLandscape.industry} + {competitorLandscape.use_case} in {competitorLandscape.region} {/* ✅ CHANGED: From purple to blue */}
                     </h3>
                     
-                    <div className="text-sm mb-5 text-purple-300 italic">
+                    <div className="text-sm mb-5 text-blue-700 italic"> {/* ✅ CHANGED: From purple to blue */}
                       Based on all articles scraped
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {Object.entries(parseCompetitorLandscape(competitorLandscape.landscape)).map(([key, section], index) => (
-                        <div key={key} className="p-5 rounded-lg shadow-lg bg-black/60 border-2 border-white hover:border-purple-500/60 transition-all duration-300 transform hover:-translate-y-1">
-                          <h4 className="font-semibold text-white mb-3 pb-2 border-b border-white">{section.title}</h4>
+                        <div key={key} className="p-5 rounded-lg shadow-lg bg-stone-50/90 border-2 border-stone-300 hover:border-blue-400/60 transition-all duration-300 transform hover:-translate-y-1"> {/* ✅ CHANGED: From purple to blue */}
+                          <h4 className="font-semibold text-stone-800 mb-3 pb-2 border-b border-stone-400">{section.title}</h4>
                           
-                          <ul className="list-disc pl-5 space-y-2 text-gray-100">
+                          <ul className="list-disc pl-5 space-y-2 text-stone-700">
                             {section.points.map((point, i) => (
-                              <li key={i} className="text-gray-200 text-base md:text-lg leading-relaxed" 
+                              <li key={i} className="text-stone-700 text-base md:text-lg leading-relaxed" 
                                   dangerouslySetInnerHTML={{ __html: formatText(point) }} />
                             ))}
                           </ul>
@@ -744,7 +746,7 @@ const TrendAnalyzer = () => {
                       onClick={toggleIndividualArticles}
                       className={`px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium ${
                         showIndividualArticles 
-                          ? 'bg-gray-700 hover:bg-gray-600 text-white border border-blue-400' 
+                          ? 'bg-stone-400 hover:bg-stone-500 text-white border border-blue-500' 
                           : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40'
                       }`}
                     >
@@ -756,8 +758,8 @@ const TrendAnalyzer = () => {
                       onClick={toggleCompanySearchModal}
                       className={`px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium ${
                         showCompanySearch 
-                          ? 'bg-gray-700 hover:bg-gray-600 text-white border border-green-400' 
-                          : 'bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/25 hover:shadow-green-500/40'
+                          ? 'bg-stone-400 hover:bg-stone-500 text-white border border-blue-500' /* ✅ CHANGED: From green to blue */
+                          : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40' /* ✅ CHANGED: From green to blue */
                       }`}
                       disabled={loadingCompanyInsights}
                     >
@@ -767,7 +769,7 @@ const TrendAnalyzer = () => {
 
                     <button
                       onClick={generatePowerPoint}
-                      className="px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white shadow-lg shadow-orange-600/25 hover:shadow-orange-500/40"
+                      className="px-6 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium bg-gradient-to-r from-blue-600 to-blue-200 hover:from-blue-200 hover:to-blue-600 text-white shadow-lg shadow-blue-600/25 hover:shadow-blue-500/40"
                       disabled={loadingPPT}
                     >
                       <Download className="h-5 w-5" />
@@ -779,13 +781,13 @@ const TrendAnalyzer = () => {
                 {/* Company Search Modal */}
                 {companySearchModal && (
                   <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-                    <div className="bg-gray-900 border border-blue-500 rounded-xl p-6 max-w-md w-full m-4">
-                      <h3 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
-                        <Building2 className="h-5 w-5 text-blue-400" />
+                    <div className="bg-stone-100 border border-blue-400 rounded-xl p-6 max-w-md w-full m-4">
+                      <h3 className="text-xl font-bold mb-4 text-stone-800 flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-blue-600" />
                         Company Analysis
                       </h3>
                       
-                      <p className="text-gray-300 mb-4">
+                      <p className="text-stone-700 mb-4">
                         Enter a company name to analyze trends specific to that organization.
                       </p>
                       
@@ -795,14 +797,14 @@ const TrendAnalyzer = () => {
                           value={companyName}
                           onChange={(e) => setCompanyName(e.target.value)}
                           placeholder="Enter company name (e.g., Microsoft, IBM)"
-                          className="w-full p-3 bg-black border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          className="w-full p-3 bg-white border border-stone-400 rounded-lg text-stone-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                       
                       <div className="flex gap-3 justify-end">
                         <button 
                           onClick={toggleCompanySearchModal}
-                          className="px-4 py-2 text-gray-300 border border-gray-700 rounded-lg hover:bg-gray-800"
+                          className="px-4 py-2 text-stone-700 border border-stone-400 rounded-lg hover:bg-stone-200"
                         >
                           Cancel
                         </button>
@@ -821,51 +823,51 @@ const TrendAnalyzer = () => {
 
                 {/* Company Insights Display */}
                 {showCompanySearch && companyInsights && (
-                  <div className="p-6 rounded-xl border bg-gradient-to-br from-green-900/40 to-emerald-900/60 border-green-600/30 shadow-xl backdrop-blur-sm">
-                    <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-green-200 border-b border-green-700/40 pb-3">
-                      <span className="text-green-300">🏢</span> Company Analysis: {companyInsights.company_name}
+                  <div className="p-6 rounded-xl border bg-gradient-to-br from-blue-100/60 to-blue-200/80 border-blue-300/50 shadow-xl backdrop-blur-sm"> {/* ✅ CHANGED: From green to blue */}
+                    <h3 className="text-xl font-bold mb-5 flex items-center gap-2 text-blue-800 border-b border-blue-400/40 pb-3"> {/* ✅ CHANGED: From green to blue */}
+                      <span className="text-blue-600">🏢</span> Company Analysis: {companyInsights.company_name} {/* ✅ CHANGED: From green to blue */}
                     </h3>
                     
-                    <div className="text-sm mb-5 text-green-300 italic">
+                    <div className="text-sm mb-5 text-blue-700 italic"> {/* ✅ CHANGED: From green to blue */}
                       Based on recent news and market trends
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="p-5 rounded-lg shadow-lg bg-black/60 border-2 border-white hover:border-green-500/60 transition-all duration-300 transform hover:-translate-y-1">
-                        <h4 className="font-bold text-white mb-3 pb-2 border-b border-white">KEY INITIATIVES</h4>
-                        <ul className="list-disc pl-5 space-y-2 text-gray-100">
+                      <div className="p-5 rounded-lg shadow-lg bg-stone-50/90 border-2 border-stone-300 hover:border-blue-400/60 transition-all duration-300 transform hover:-translate-y-1"> {/* ✅ CHANGED: From green to blue */}
+                        <h4 className="font-bold text-stone-800 mb-3 pb-2 border-b border-stone-400">KEY INITIATIVES</h4>
+                        <ul className="list-disc pl-5 space-y-2 text-stone-700">
                           {companyInsights.initiatives.map((point, i) => (
-                            <li key={i} className="text-gray-200 text-base md:text-lg leading-relaxed" 
+                            <li key={i} className="text-stone-700 text-base md:text-lg leading-relaxed" 
                                 dangerouslySetInnerHTML={{ __html: formatText(point) }} />
                           ))}
                         </ul>
                       </div>
                       
-                      <div className="p-5 rounded-lg shadow-lg bg-black/60 border-2 border-white hover:border-green-500/60 transition-all duration-300 transform hover:-translate-y-1">
-                        <h4 className="font-bold text-white mb-3 pb-2 border-b border-white">MARKET POSITION</h4>
-                        <ul className="list-disc pl-5 space-y-2 text-gray-100">
+                      <div className="p-5 rounded-lg shadow-lg bg-stone-50/90 border-2 border-stone-300 hover:border-blue-400/60 transition-all duration-300 transform hover:-translate-y-1"> {/* ✅ CHANGED: From green to blue */}
+                        <h4 className="font-bold text-stone-800 mb-3 pb-2 border-b border-stone-400">MARKET POSITION</h4>
+                        <ul className="list-disc pl-5 space-y-2 text-stone-700">
                           {companyInsights.market_position.map((point, i) => (
-                            <li key={i} className="text-gray-200 text-base md:text-lg leading-relaxed" 
+                            <li key={i} className="text-stone-700 text-base md:text-lg leading-relaxed" 
                                 dangerouslySetInnerHTML={{ __html: formatText(point) }} />
                           ))}
                         </ul>
                       </div>
                       
-                      <div className="p-5 rounded-lg shadow-lg bg-black/60 border-2 border-white hover:border-green-500/60 transition-all duration-300 transform hover:-translate-y-1">
-                        <h4 className="font-bold text-white mb-3 pb-2 border-b border-white">STRENGTHS & OPPORTUNITIES</h4>
-                        <ul className="list-disc pl-5 space-y-2 text-gray-100">
+                      <div className="p-5 rounded-lg shadow-lg bg-stone-50/90 border-2 border-stone-300 hover:border-blue-400/60 transition-all duration-300 transform hover:-translate-y-1"> {/* ✅ CHANGED: From green to blue */}
+                        <h4 className="font-bold text-stone-800 mb-3 pb-2 border-b border-stone-400">STRENGTHS & OPPORTUNITIES</h4>
+                        <ul className="list-disc pl-5 space-y-2 text-stone-700">
                           {companyInsights.strengths.map((point, i) => (
-                            <li key={i} className="text-gray-200 text-base md:text-lg leading-relaxed" 
+                            <li key={i} className="text-stone-700 text-base md:text-lg leading-relaxed" 
                                 dangerouslySetInnerHTML={{ __html: formatText(point) }} />
                           ))}
                         </ul>
                       </div>
                       
-                      <div className="p-5 rounded-lg shadow-lg bg-black/60 border-2 border-white hover:border-green-500/60 transition-all duration-300 transform hover:-translate-y-1">
-                        <h4 className="font-bold text-white mb-3 pb-2 border-b border-white">SALES CONVERSATION STARTERS</h4>
-                        <ul className="list-disc pl-5 space-y-2 text-gray-100">
+                      <div className="p-5 rounded-lg shadow-lg bg-stone-50/90 border-2 border-stone-300 hover:border-blue-400/60 transition-all duration-300 transform hover:-translate-y-1"> {/* ✅ CHANGED: From green to blue */}
+                        <h4 className="font-bold text-stone-800 mb-3 pb-2 border-b border-stone-400">SALES CONVERSATION STARTERS</h4>
+                        <ul className="list-disc pl-5 space-y-2 text-stone-700">
                           {companyInsights.conversation_starters.map((point, i) => (
-                            <li key={i} className="text-gray-200 text-base md:text-lg leading-relaxed" 
+                            <li key={i} className="text-stone-700 text-base md:text-lg leading-relaxed" 
                                 dangerouslySetInnerHTML={{ __html: formatText(point) }} />
                           ))}
                         </ul>
@@ -874,7 +876,7 @@ const TrendAnalyzer = () => {
 
                     {companyInsights.related_articles && companyInsights.related_articles.length > 0 && (
                       <div className="mt-6">
-                        <h4 className="font-semibold text-lg text-green-200 mb-3">Recent News</h4>
+                        <h4 className="font-semibold text-lg text-blue-800 mb-3">Recent News</h4> {/* ✅ CHANGED: From green to blue */}
                         <div className="space-y-2">
                           {companyInsights.related_articles.map((article, i) => (
                             <a 
@@ -882,10 +884,10 @@ const TrendAnalyzer = () => {
                               href={article.link} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="block p-3 rounded-lg bg-black/50 hover:bg-black/70 border border-green-900/30 hover:border-green-500/50 transition-all duration-300"
+                              className="block p-3 rounded-lg bg-stone-50/80 hover:bg-stone-100/90 border border-blue-300/30 hover:border-blue-400/50 transition-all duration-300" /* ✅ CHANGED: From green to blue */
                             >
-                              <div className="font-medium text-green-300">{article.title}</div>
-                              <div className="text-xs text-green-100/70 mt-1">{article.source} • {article.date}</div>
+                              <div className="font-medium text-blue-700">{article.title}</div> {/* ✅ CHANGED: From green to blue */}
+                              <div className="text-xs text-blue-600/70 mt-1">{article.source} • {article.date}</div> {/* ✅ CHANGED: From green to blue */}
                             </a>
                           ))}
                         </div>
@@ -896,10 +898,10 @@ const TrendAnalyzer = () => {
 
                 {/* Individual Articles */}
                 <div className="space-y-5">
-                  <h3 className="text-xl font-bold flex items-center gap-2 text-white border-b border-gray-700/50 pb-3">
-                    <span className="text-blue-300">📊</span> Individual Market Trends 
+                  <h3 className="text-xl font-bold flex items-center gap-2 text-stone-800 border-b border-stone-400/50 pb-3">
+                    <span className="text-blue-600">📊</span> Individual Market Trends 
                     {results.data.results && results.data.results.length > 0 && (
-                      <span className="ml-2 text-sm font-normal text-gray-400">
+                      <span className="ml-2 text-sm font-normal text-stone-600">
                         (Top {results.data.results.length} most relevant)
                       </span>
                     )}
@@ -907,33 +909,33 @@ const TrendAnalyzer = () => {
                   
                   {showIndividualArticles && (
                     results.data.results.length === 0 ? (
-                      <div className="p-6 rounded-lg border bg-yellow-900/30 border-yellow-500/40 shadow-lg backdrop-blur-sm">
+                      <div className="p-6 rounded-lg border bg-yellow-100/70 border-yellow-400/40 shadow-lg backdrop-blur-sm">
                         <div className="flex items-center mb-2">
                           <span className="text-2xl mr-2">⚠️</span>
-                          <h4 className="font-semibold text-yellow-400">No Relevant Trends Found</h4>
+                          <h4 className="font-semibold text-yellow-700">No Relevant Trends Found</h4>
                         </div>
-                        <p className="mb-3 text-yellow-300">
+                        <p className="mb-3 text-yellow-600">
                           No articles were found that are relevant to the specified criteria:
                         </p>
-                        <ul className="list-disc list-inside mb-3 text-yellow-300">
+                        <ul className="list-disc list-inside mb-3 text-yellow-600">
                           <li>Industry: <strong>{filters.industry}</strong></li>
                           <li>Use Case: <strong>{filters.use_case}</strong></li>
                           <li>Region: <strong>{filters.region}</strong></li>
                         </ul>
-                        <p className="text-sm text-yellow-300">
+                        <p className="text-sm text-yellow-600">
                           Try broadening your search criteria or check if there are recent articles covering this specific combination.
                         </p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {results.data.results.map((result, index) => (
-                          <div key={index} className="p-6 border rounded-lg shadow-lg transition-all duration-300 bg-gray-900/60 border-gray-700/50 hover:bg-gray-800/70 hover:border-blue-500/50 backdrop-blur-sm transform hover:-translate-y-1">
-                            <h4 className="font-semibold text-xl mb-4 text-white border-b border-blue-500 pb-2 flex items-center gap-2">
-                              <span className="text-blue-300">📰</span> {result.title}
+                          <div key={index} className="p-6 border rounded-lg shadow-lg transition-all duration-300 bg-stone-100/70 border-stone-300/50 hover:bg-stone-200/70 hover:border-blue-400/50 backdrop-blur-sm transform hover:-translate-y-1">
+                            <h4 className="font-semibold text-xl mb-4 text-stone-800 border-b border-blue-400 pb-2 flex items-center gap-2">
+                              <span className="text-blue-600">📰</span> {result.title}
                             </h4>
                             
                             <div 
-                              className="prose mb-5 max-w-none text-gray-200 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>strong]:font-semibold [&>strong]:text-white"
+                              className="prose mb-5 max-w-none text-stone-700 [&>ul]:list-disc [&>ul]:pl-6 [&>ul]:space-y-2 [&>strong]:font-semibold [&>strong]:text-stone-800"
                               dangerouslySetInnerHTML={{ 
                                 __html: formatText(result.summary) 
                               }}
@@ -943,7 +945,7 @@ const TrendAnalyzer = () => {
                               href={result.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center text-sm font-medium transition-colors text-blue-400 hover:text-blue-300 border border-blue-800/30 hover:border-blue-500/50 py-2 px-4 rounded-lg"
+                              className="inline-flex items-center text-sm font-medium transition-colors text-blue-600 hover:text-blue-700 border border-blue-300/30 hover:border-blue-400/50 py-2 px-4 rounded-lg"
                             >
                               🔗 Read full article
                               <ChevronRight className="w-4 h-4 ml-2" />
@@ -962,30 +964,30 @@ const TrendAnalyzer = () => {
         {/* PowerPoint Preview Modal */}
         {showPPTPreview && pptData && (
           <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-            <div className="bg-gradient-to-br from-gray-900 to-black border border-orange-500/30 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-br from-stone-100 to-stone-50 border border-blue-400/30 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-orange-500/20 bg-gradient-to-r from-orange-900/20 to-red-900/20">
+              <div className="flex items-center justify-between p-6 border-b border-blue-400/20 bg-gradient-to-r from-blue-100/20 to-blue-100/20">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-blue-400 rounded-lg flex items-center justify-center">
                     <Download className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">Sales Presentation Ready</h2>
-                    <p className="text-sm text-gray-300">Professional PowerPoint with charts and insights</p>
+                    <h2 className="text-xl font-bold text-stone-800">Sales Presentation Ready</h2>
+                    <p className="text-sm text-stone-600">Professional PowerPoint with charts and insights</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
                   <button
                     onClick={downloadPowerPoint}
-                    className="px-4 py-2 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white rounded-lg transition-all duration-300 flex items-center gap-2 font-medium shadow-lg"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-400 to-blue-400 hover:from-blue-500 hover:to-blue-500 text-white rounded-lg transition-all duration-300 flex items-center gap-2 font-medium shadow-lg"
                   >
                     <Download className="h-4 w-4" />
                     Download PPT
                   </button>
                   <button
                     onClick={closePPTPreview}
-                    className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
+                    className="text-stone-600 hover:text-stone-800 transition-colors p-2 hover:bg-stone-200/50 rounded-lg"
                   >
                     <X className="h-6 w-6" />
                   </button>
@@ -995,68 +997,68 @@ const TrendAnalyzer = () => {
               {/* Content Preview */}
               <div className="p-8">
                 <div className="text-center mb-8">
-                  <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-orange-400 via-red-400 to-orange-400 bg-clip-text text-transparent">
+                  <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-700 via-blue-800 to-blue-900 bg-clip-text text-transparent">
                     Sales Presentation Generated
                   </h1>
-                  <p className="text-xl text-gray-300 mb-6">
+                  <p className="text-xl text-stone-700 mb-6">
                     Professional PowerPoint with market insights, charts, and sales-focused content
                   </p>
                 </div>
 
                 {/* Features Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  <div className="p-4 rounded-lg bg-gradient-to-br from-blue-900/30 to-blue-800/50 border border-blue-500/30">
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-blue-100/50 to-blue-200/70 border border-blue-300/30">
                     <div className="text-2xl mb-2">📊</div>
-                    <h3 className="font-semibold text-white mb-2">Market Analytics</h3>
-                    <p className="text-sm text-gray-300">Charts and statistics showing market trends and opportunities</p>
+                    <h3 className="font-semibold text-stone-800 mb-2">Market Analytics</h3>
+                    <p className="text-sm text-stone-700">Charts and statistics showing market trends and opportunities</p>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-gradient-to-br from-purple-900/30 to-purple-800/50 border border-purple-500/30">
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-blue-200/50 to-blue-300/70 border border-blue-300/30">
                     <div className="text-2xl mb-2">🎯</div>
-                    <h3 className="font-semibold text-white mb-2">Sales Insights</h3>
-                    <p className="text-sm text-gray-300">Targeted talking points and conversation starters</p>
+                    <h3 className="font-semibold text-stone-800 mb-2">Sales Insights</h3>
+                    <p className="text-sm text-stone-700">Targeted talking points and conversation starters</p>
                   </div>
                   
-                  <div className="p-4 rounded-lg bg-gradient-to-br from-green-900/30 to-green-800/50 border border-green-500/30">
+                  <div className="p-4 rounded-lg bg-gradient-to-br from-blue-300/50 to-blue-400/70 border border-green-300/30">
                     <div className="text-2xl mb-2">🏆</div>
-                    <h3 className="font-semibold text-white mb-2">Competitive Edge</h3>
-                    <p className="text-sm text-gray-300">Competitor analysis and positioning strategies</p>
+                    <h3 className="font-semibold text-stone-800 mb-2">Competitive Edge</h3>
+                    <p className="text-sm text-stone-700">Competitor analysis and positioning strategies</p>
                   </div>
                 </div>
 
                 {/* Metadata */}
-                {pptData.metadata && (
-                  <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
-                    <h4 className="font-semibold text-white mb-3">Presentation Details</h4>
+                {/* {pptData.metadata && (
+                  <div className="bg-stone-200/50 rounded-lg p-4 border border-stone-300/50">
+                    <h4 className="font-semibold text-stone-800 mb-3">Presentation Details</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-400">Slides:</span>
-                        <span className="ml-2 text-white font-medium">{pptData.metadata.slides_count}</span>
+                        <span className="text-stone-600">Slides:</span>
+                        <span className="ml-2 text-stone-800 font-medium">{pptData.metadata.slides_count}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">File Size:</span>
-                        <span className="ml-2 text-white font-medium">{pptData.metadata.file_size_mb?.toFixed(1)} MB</span>
+                        <span className="text-stone-600">File Size:</span>
+                        <span className="ml-2 text-stone-800 font-medium">{pptData.metadata.file_size_mb?.toFixed(1)} MB</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">Generated:</span>
-                        <span className="ml-2 text-white font-medium">{pptData.metadata.generation_time?.toFixed(1)}s</span>
+                        <span className="text-stone-600">Generated:</span>
+                        <span className="ml-2 text-stone-800 font-medium">{pptData.metadata.generation_time?.toFixed(1)}s</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">Format:</span>
-                        <span className="ml-2 text-white font-medium">PowerPoint (.pptx)</span>
+                        <span className="text-stone-600">Format:</span>
+                        <span className="ml-2 text-stone-800 font-medium">PowerPoint (.pptx)</span>
                       </div>
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {/* Call to Action */}
                 <div className="text-center mt-8">
-                  <p className="text-gray-400 mb-4">
+                  <p className="text-stone-600 mb-4">
                     Your professional sales presentation is ready for download
                   </p>
                   <button
                     onClick={downloadPowerPoint}
-                    className="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white rounded-lg transition-all duration-300 flex items-center gap-3 font-medium shadow-lg mx-auto text-lg"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-400 to-blue-600 hover:from-orange-500 hover:to-red-500 text-white rounded-lg transition-all duration-300 flex items-center gap-3 font-medium shadow-lg mx-auto text-lg"
                   >
                     <Download className="h-6 w-6" />
                     Download Sales Presentation
@@ -1068,14 +1070,9 @@ const TrendAnalyzer = () => {
         )}
         
         {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-          <div className="mb-4">
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent font-bold">
-              Market Trend Analyzer
-            </span>
-          </div>
-          <p>© 2025 - Powered by AI and Data Analysis</p>
-          <p className="mt-1">✨ Optimized for real-time financial market insights ✨</p>
+        <footer className="mt-16 pt-8 border-t border-stone-400 text-center text-stone-600 text-sm">
+          
+          <p>© 2025 - Powered by watsonx</p>
         </footer>
       </div>
     </div>
@@ -1083,4 +1080,3 @@ const TrendAnalyzer = () => {
 };
 
 export default TrendAnalyzer;
-

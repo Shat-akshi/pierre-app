@@ -35,3 +35,4 @@ chromadb==0.4.6
 # APIs
 newsapi-python==0.2.6
 yfinance==0.2.28
+

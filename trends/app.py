@@ -17,6 +17,8 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 import matplotlib
 from urllib.parse import urlencode
+from bs4 import BeautifulSoup
+
 
 matplotlib.use('Agg')
 import io
@@ -32,6 +34,8 @@ load_dotenv()
 from summarizer import smart_summarize_article, generate_aggregate_insights, generate_competitor_landscape
 from article_filter import rank_articles_by_relevance
 from enhanced_ppt_generator import EnhancedPPTGenerator
+from fallback import QUICK_FALLBACK_LINKS
+
 
 # ADD THIS LINE: Import the enhanced PPT generator
 from enhanced_ppt_generator import EnhancedPPTGenerator
@@ -163,247 +167,48 @@ class NewsAPICollector:
         except Exception as e:
             print(f"❌ News API Error: {e}")
             return []
-# class NewsAPICollector:
-#     """Fixed News API collector with ScrapingBee proxy support"""
+
+def get_fallback_links(industry, use_case, region):
+    """Get fallback links when NewsAPI fails"""
+    cache_key = f"{industry}_{use_case}_{region}"
+    return QUICK_FALLBACK_LINKS.get(cache_key, [])
+
+def scrape_fallback_articles(fallback_links, max_links=5):
+    """Quick scrape of fallback links"""
+    quick_articles = []
     
-#     def __init__(self):
-#         # API Keys
-#         self.api_key = 'fb79c0e226a1400db86be8b370b6a2fc'
-#         self.scrapingbee_api_key = 'CNG1OKXEMD0H2XF5N3WRTEOS9Z323G86GEW2UPYL7Y33TYGCVBQUOPMIX5K5TQU1WSW8SZT9P6LYF94S'
-        
-#         self.scrapingbee_base_url = 'https://app.scrapingbee.com/api/v1/'
-#         self.news_base_url = "https://newsapi.org/v2/everything"
-        
-#         print("✅ NewsAPICollector initialized")
-
-#     def test_direct_news_api(self, query="fintech AI"):
-#         """Test direct NewsAPI call without ScrapingBee"""
-#         try:
-#             params = {
-#                 'q': query,
-#                 'language': 'en',
-#                 'sortBy': 'publishedAt',
-#                 'from': (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d'),
-#                 'pageSize': 5,
-#                 'apiKey': self.api_key
-#             }
+    for link in fallback_links[:max_links]:
+        try:
+            print(f"🔗 Scraping fallback: {link}")
+            response = requests.get(link, timeout=8, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
             
-#             response = requests.get(self.news_base_url, params=params, timeout=10)
-#             response.raise_for_status()
-#             data = response.json()
-            
-#             if data.get('status') == 'ok':
-#                 print(f"✅ Direct NewsAPI test successful: {len(data.get('articles', []))} articles")
-#                 return True
-#             else:
-#                 print(f"❌ NewsAPI error: {data.get('message', 'Unknown error')}")
-#                 return False
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
                 
-#         except Exception as e:
-#             print(f"❌ Direct NewsAPI test failed: {e}")
-#             return False
-
-#     def create_scrapingbee_proxy_url(self, target_url):
-#         """Create properly encoded ScrapingBee proxy URL"""
-#         try:
-#             # ScrapingBee parameters
-#             scrapingbee_params = {
-#                 'api_key': self.scrapingbee_api_key,
-#                 'url': target_url,  # This will be properly encoded by urlencode
-#                 'render_js': 'false',
-#                 'premium_proxy': 'false',
-#                 'country_code': 'us'  # Added country code for better reliability
-#             }
-            
-#             # Build the complete ScrapingBee URL
-#             proxy_url = f"{self.scrapingbee_base_url}?{urlencode(scrapingbee_params)}"
-            
-#             print(f"📡 ScrapingBee URL: {proxy_url[:100]}...")
-#             return proxy_url
-            
-#         except Exception as e:
-#             print(f"❌ Error creating ScrapingBee URL: {e}")
-#             return None
-
-#     def get_targeted_articles(self, industry, use_case, region, limit=12, company=None):
-#         # """Get articles using News API with fallback options"""
-        
-#         # # First try direct NewsAPI call
-#         # articles = self._try_direct_newsapi(industry, use_case, region, limit, company)
-        
-#         # if articles:
-#         #     return articles
-            
-#         # If direct fails, try ScrapingBee
-#         """Get articles using News API via ScrapingBee ONLY"""
-#         print("🔄 Direct NewsAPI failed, trying ScrapingBee...")
-#         return self._try_scrapingbee_newsapi(industry, use_case, region, limit, company)
-
-#     def _try_direct_newsapi(self, industry, use_case, region, limit, company):
-#         """Try direct NewsAPI call first"""
-#         try:
-#             query = self._build_query(industry, use_case, region, company)
-            
-#             params = {
-#                 'q': query,
-#                 'language': 'en',
-#                 'sortBy': 'publishedAt',
-#                 'from': (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d'),
-#                 'pageSize': limit,
-#                 'apiKey': self.api_key
-#             }
-            
-#             print(f"🔍 Direct NewsAPI query: {query}")
-            
-#             response = requests.get(self.news_base_url, params=params, timeout=15)
-#             response.raise_for_status()
-#             data = response.json()
-            
-#             if data.get('status') == 'ok':
-#                 articles = self._transform_articles(data.get('articles', []))
-#                 print(f"✅ Direct NewsAPI success: {len(articles)} articles")
-#                 return articles
-#             else:
-#                 print(f"❌ NewsAPI error: {data.get('message', 'Unknown error')}")
-#                 return []
+                # Extract title
+                title = soup.find('title')
+                title_text = title.text.strip() if title else "Fallback Article"
                 
-#         except Exception as e:
-#             print(f"❌ Direct NewsAPI error: {e}")
-#             return []
-
-#     def _try_scrapingbee_newsapi(self, industry, use_case, region, limit, company):
-#         """Try NewsAPI via ScrapingBee proxy"""
-#         try:
-#             query = self._build_query(industry, use_case, region, company)
-            
-#             # Build NewsAPI URL
-#             params = {
-#                 'q': query,
-#                 'language': 'en',
-#                 'sortBy': 'publishedAt',
-#                 'from': (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d'),
-#                 'pageSize': limit,
-#                 'apiKey': self.api_key
-#             }
-            
-#             news_api_url = f"{self.news_base_url}?{urlencode(params)}"
-#             print(f"📡 NewsAPI URL: {news_api_url[:100]}...")
-            
-#             # Create ScrapingBee proxy URL
-#             proxy_url = self.create_scrapingbee_proxy_url(news_api_url)
-            
-#             if not proxy_url:
-#                 return []
-            
-#             # Make request via ScrapingBee
-#             headers = {
-#                 'Accept': 'application/json',
-#                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-#             }
-            
-#             response = requests.get(proxy_url, headers=headers, timeout=20)
-            
-#             print(f"📊 ScrapingBee response status: {response.status_code}")
-            
-#             if response.status_code == 200:
-#                 data = response.json()
+                # Extract content (first few paragraphs)
+                paragraphs = soup.find_all('p')
+                content = ' '.join([p.get_text().strip() for p in paragraphs[:5]])
                 
-#                 if data.get('status') == 'ok':
-#                     articles = self._transform_articles(data.get('articles', []))
-#                     print(f"✅ ScrapingBee + NewsAPI success: {len(articles)} articles")
-#                     return articles
-#                 else:
-#                     print(f"❌ NewsAPI via ScrapingBee error: {data.get('message', 'Unknown error')}")
-#             else:
-#                 print(f"❌ ScrapingBee HTTP error: {response.status_code}")
-#                 try:
-#                     error_data = response.json()
-#                     print(f"❌ ScrapingBee error details: {error_data}")
-#                 except:
-#                     print(f"❌ ScrapingBee error text: {response.text[:200]}")
-            
-#             return []
-            
-#         except Exception as e:
-#             print(f"❌ ScrapingBee + NewsAPI error: {e}")
-#             return []
-
-#     def _build_query(self, industry, use_case, region, company):
-#         """Build targeted query based on filters"""
-#         query_parts = []
-        
-#         # Add company name if provided (with highest priority)
-#         if company:
-#             clean_company = company.strip().replace('"', '')
-#             query_parts.append(f'"{clean_company}"')
-
-#         # Industry keywords
-#         if "Financial" in industry or "Finance" in industry:
-#             query_parts.append("(fintech OR banking OR finance OR investment OR payment)")
-#         elif "Technology" in industry:
-#             query_parts.append("(technology OR software OR digital OR startup OR tech)")
-#         elif "Healthcare" in industry:
-#             query_parts.append("(healthcare OR medical OR pharma OR health)")
-
-#         # Use case keywords
-#         if "AI" in use_case or "Machine Learning" in use_case:
-#             query_parts.append("(AI OR \"artificial intelligence\" OR \"machine learning\" OR automation)")
-#         elif "Automation" in use_case:
-#             query_parts.append("(automation OR RPA OR workflow OR \"business process\")")
-
-#         # Region keywords
-#         if "Asia" in region:
-#             query_parts.append("(Asia OR India OR China OR Singapore OR Japan OR \"South Asia\")")
-#         elif "Europe" in region:
-#             query_parts.append("(Europe OR UK OR Germany OR France OR \"European Union\")")
-
-#         # Combine with AND logic
-#         return " AND ".join(query_parts)
-
-#     def _transform_articles(self, articles):
-#         """Transform articles to expected format"""
-#         transformed_articles = []
-        
-#         for article in articles:
-#             # Filter out articles with limited content
-#             if (article.get('content') and
-#                 article.get('content') != '[Removed]' and
-#                 len(article.get('content', '')) > 200):
-                
-#                 transformed_articles.append({
-#                     'title': article.get('title', 'Untitled'),
-#                     'link': article.get('url', ''),
-#                     'description': article.get('description', ''),
-#                     'content': article.get('content', ''),
-#                     'published_at': article.get('publishedAt', ''),
-#                     'source': article.get('source', {}).get('name', 'Unknown'),
-#                     'cleaned_text': [article.get('content', '')]  # For compatibility
-#                 })
-        
-#         return transformed_articles
-
-#     def test_scrapingbee_connection(self):
-#         """Test ScrapingBee connection with simple request"""
-#         try:
-#             test_url = "https://httpbin.org/json"
-#             proxy_url = self.create_scrapingbee_proxy_url(test_url)
-            
-#             if not proxy_url:
-#                 return False
-            
-#             response = requests.get(proxy_url, timeout=10)
-            
-#             if response.status_code == 200:
-#                 print("✅ ScrapingBee connection test successful")
-#                 return True
-#             else:
-#                 print(f"❌ ScrapingBee connection test failed: {response.status_code}")
-#                 return False
-                
-#         except Exception as e:
-#             print(f"❌ ScrapingBee connection test error: {e}")
-#             return False
-
+                if len(content) > 100:  # Only add if we got decent content
+                    quick_articles.append({
+                        "title": title_text,
+                        "content": content,
+                        "link": link,
+                        "source": "fallback_scraping",
+                        "cleaned_text": [content]
+                    })
+                    
+        except Exception as scrape_error:
+            print(f"⚠️ Failed to scrape {link}: {scrape_error}")
+            continue
+    
+    return quick_articles
 
 def process_article_optimized(article, filters, seen_hashes):
     """Process a single article using optimized summarization"""
@@ -436,90 +241,287 @@ def process_article_optimized(article, filters, seen_hashes):
         print(f"⚠️ Error processing article: {str(e)} - Time: {processing_time:.2f}s")
         return None, True, False, processing_time
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/trends/health', methods=['GET'])
 def health_check():
     """Simple health check endpoint"""
     return jsonify({"status": "healthy", "message": "Optimized API is running"})
 
-@app.route('/api/analyze-trends', methods=['POST'])
-def analyze_trends():
-    """OPTIMIZED: Main endpoint using News API + combined summarization"""
-    overall_start_time = time.time()
+# @app.route('/api/analyze-trends', methods=['POST'])
+# def analyze_trends():
+#     """OPTIMIZED: Main endpoint using News API + combined summarization"""
+#     overall_start_time = time.time()
     
+#     try:
+#         # Get filters from request body
+#         data = request.get_json() or {}
+#         filters = {
+#             "industry": data.get("industry", "Financial services"),
+#             "use_case": data.get("use_case", "AI & Machine Learning"),
+#             "region": data.get("region", "Asia")
+#         }
+        
+#         cache_key = f"{filters['industry']}-{filters['use_case']}-{filters['region']}"
+        
+#         # ===== STEP 1: Get articles from News API =====
+#         print("🚀 Fetching articles from News API...")
+#         news_api_start = time.time()
+        
+#         collector = NewsAPICollector()
+#         articles = collector.get_targeted_articles(
+#             filters["industry"],
+#             filters["use_case"],
+#             filters["region"],
+#             limit=15  # Get more targeted articles
+#         )
+        
+#         news_api_time = time.time() - news_api_start
+        
+#         if not articles:
+#             return jsonify({
+#                 "error": "No articles found from News API. Check your API key and filters.",
+#                 "results": [],
+#                 "timing": {"total": time.time() - overall_start_time}
+#             }), 400
+        
+#         print(f"✅ Retrieved {len(articles)} articles from News API - Time: {news_api_time:.2f}s")
+        
+#         # ===== STEP 2: Optional ranking (News API is already targeted) =====
+#         print("🔄 Ranking articles by relevance...")
+#         ranking_start = time.time()
+        
+#         # Convert to format expected by ranking function
+#         formatted_articles = []
+#         for article in articles:
+#             formatted_articles.append({
+#                 'title': article['title'],
+#                 'link': article['link'],
+#                 'cleaned_text': article['cleaned_text']
+#             })
+        
+#         # Rank articles but keep more since News API is already targeted
+#         ranked_articles = rank_articles_by_relevance(formatted_articles, filters)
+#         ranking_time = time.time() - ranking_start
+        
+#         print(f"✅ Ranked {len(ranked_articles)} articles - Time: {ranking_time:.2f}s")
+        
+#         # ===== STEP 3: Process articles with optimized summarization =====
+#         print("⚙️ Processing articles with optimized summarization...")
+#         processing_start = time.time()
+        
+#         results = []
+#         processed = 0
+#         successful = 0
+#         seen_hashes = set()
+        
+#         # Initialize cache for this filter combination
+#         if cache_key not in processed_articles_cache:
+#             processed_articles_cache[cache_key] = set()
+        
+#         # Process articles in parallel with early stopping
+#         max_to_process = min(10, len(ranked_articles))  # Process fewer since News API is better targeted
+#         required_successful = 3
+        
+#         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+#             futures = []
+            
+#             # Submit articles for processing
+#             for i, article in enumerate(ranked_articles[:max_to_process]):
+#                 futures.append(executor.submit(
+#                     process_article_optimized,
+#                     article,
+#                     filters,
+#                     seen_hashes
+#                 ))
+            
+#             # Process results as they complete
+#             for future in concurrent.futures.as_completed(futures):
+#                 try:
+#                     summary, is_processed, is_successful, proc_time = future.result()
+                    
+#                     if is_processed:
+#                         processed += 1
+                        
+#                         if is_successful and summary:
+#                             results.append(summary)
+#                             article_hash = summary.get('hash')
+#                             if article_hash:
+#                                 seen_hashes.add(article_hash)
+#                                 processed_articles_cache[cache_key].add(article_hash)
+#                             successful += 1
+                            
+#                             # Early stopping
+#                             if successful >= required_successful:
+#                                 print(f"🎯 Reached target of {required_successful} successful articles")
+#                                 # Cancel remaining futures
+#                                 for f in futures:
+#                                     if not f.done():
+#                                         f.cancel()
+#                                 break
+                                
+#                 except Exception as e:
+#                     print(f"Error processing future: {e}")
+        
+#         processing_time = time.time() - processing_start
+#         print(f"✅ Processed {processed} articles, {successful} successful - Time: {processing_time:.2f}s")
+        
+#         # ===== STEP 4: Generate insights =====
+#         insights_start = time.time()
+#         aggregate_insights = None
+        
+#         if results:
+#             try:
+#                 print("📊 Generating insights...")
+#                 aggregate_insights = generate_aggregate_insights(
+#                     results,
+#                     filters["industry"],
+#                     filters["use_case"],
+#                     filters["region"]
+#                 )
+#             except Exception as e:
+#                 print(f"⚠️ Error generating insights: {e}")
+        
+#         insights_time = time.time() - insights_start
+#         total_time = time.time() - overall_start_time
+        
+#         # Performance summary
+#         print(f"🏁 OPTIMIZED execution completed in {total_time:.2f}s")
+#         print(f"   News API fetch: {news_api_time:.2f}s ({news_api_time/total_time*100:.1f}%)")
+#         print(f"   Article ranking: {ranking_time:.2f}s ({ranking_time/total_time*100:.1f}%)")
+#         print(f"   Article processing: {processing_time:.2f}s ({processing_time/total_time*100:.1f}%)")
+#         print(f"   Insights generation: {insights_time:.2f}s ({insights_time/total_time*100:.1f}%)")
+        
+#         return jsonify({
+#             "success": True,
+#             "results": results,
+#             "aggregate_insights": aggregate_insights,
+#             "filters": filters,
+#             "optimization_info": {
+#                 "method": "News API + Combined Summarization",
+#                 "performance_improvement": "~70% faster than web scraping"
+#             },
+#             "stats": {
+#                 "total_articles_fetched": len(articles),
+#                 "processed": processed,
+#                 "successful": successful,
+#                 "timing": {
+#                     "total": total_time,
+#                     "news_api_fetch": news_api_time,
+#                     "article_ranking": ranking_time,
+#                     "article_processing": processing_time,
+#                     "insights_generation": insights_time
+#                 }
+#             }
+#         })
+        
+#     except Exception as e:
+#         total_time = time.time() - overall_start_time
+#         print(f"❌ Pipeline error: {str(e)}")
+#         return jsonify({
+#             "error": str(e),
+#             "timing": {"total": total_time}
+#         }), 500
+
+
+
+
+
+
+
+
+
+@app.route('/api/trends/analyze-trends', methods=['POST'])
+def analyze_trends():
+    """Enhanced endpoint with fallback capability"""
+    overall_start_time = time.time()
     try:
-        # Get filters from request body
+        # Your existing filter setup
         data = request.get_json() or {}
         filters = {
             "industry": data.get("industry", "Financial services"),
             "use_case": data.get("use_case", "AI & Machine Learning"),
             "region": data.get("region", "Asia")
         }
-        
-        cache_key = f"{filters['industry']}-{filters['use_case']}-{filters['region']}"
-        
-        # ===== STEP 1: Get articles from News API =====
+
+        # NewsAPI Collection with Fallback
         print("🚀 Fetching articles from News API...")
-        news_api_start = time.time()
-        
+        collection_start = time.time()
         collector = NewsAPICollector()
-        articles = collector.get_targeted_articles(
-            filters["industry"],
-            filters["use_case"],
-            filters["region"],
-            limit=15  # Get more targeted articles
-        )
+        articles = []
+        source_type = "newsapi"
         
-        news_api_time = time.time() - news_api_start
-        
+        # Try NewsAPI first
+        try:
+            articles = collector.get_targeted_articles(
+                filters["industry"],
+                filters["use_case"],
+                filters["region"],
+                limit=15
+            )
+            
+            if articles and len(articles) >= 3:
+                print("✅ NewsAPI successful")
+            else:
+                raise Exception("Not enough articles from NewsAPI")
+                
+        except Exception as e:
+            print(f"❌ NewsAPI failed: {e}")
+            print("🔄 Activating fallback link scraping...")
+            
+            # FALLBACK LOGIC
+            fallback_links = get_fallback_links(**filters)
+            
+            if fallback_links:
+                articles = scrape_fallback_articles(fallback_links, max_links=5)
+                source_type = "fallback_links"
+                
+                if articles:
+                    print(f"✅ Fallback successful: {len(articles)} articles scraped")
+                else:
+                    print("❌ Fallback scraping also failed")
+            else:
+                print("❌ No fallback links available for this filter combination")
+
+        # Check if we have articles
         if not articles:
             return jsonify({
-                "error": "No articles found from News API. Check your API key and filters.",
-                "results": [],
-                "timing": {"total": time.time() - overall_start_time}
+                "error": "Both NewsAPI and fallback scraping failed",
+                "results": []
             }), 400
-        
-        print(f"✅ Retrieved {len(articles)} articles from News API - Time: {news_api_time:.2f}s")
-        
-        # ===== STEP 2: Optional ranking (News API is already targeted) =====
-        print("🔄 Ranking articles by relevance...")
-        ranking_start = time.time()
+
+        collection_time = time.time() - collection_start
+
+        # Article Processing (Your existing logic)
+        print("⚙️ Processing articles with optimized summarization...")
+        processing_start = time.time()
         
         # Convert to format expected by ranking function
         formatted_articles = []
         for article in articles:
             formatted_articles.append({
-                'title': article['title'],
-                'link': article['link'],
-                'cleaned_text': article['cleaned_text']
+                'title': article.get('title', ''),
+                'link': article.get('link', ''),
+                'cleaned_text': article.get('cleaned_text', [article.get('content', '')])
             })
         
-        # Rank articles but keep more since News API is already targeted
+        # Rank articles
         ranked_articles = rank_articles_by_relevance(formatted_articles, filters)
-        ranking_time = time.time() - ranking_start
         
-        print(f"✅ Ranked {len(ranked_articles)} articles - Time: {ranking_time:.2f}s")
-        
-        # ===== STEP 3: Process articles with optimized summarization =====
-        print("⚙️ Processing articles with optimized summarization...")
-        processing_start = time.time()
-        
+        # Process articles with summarization
         results = []
         processed = 0
         successful = 0
         seen_hashes = set()
         
-        # Initialize cache for this filter combination
+        cache_key = f"{filters['industry']}-{filters['use_case']}-{filters['region']}"
         if cache_key not in processed_articles_cache:
             processed_articles_cache[cache_key] = set()
         
-        # Process articles in parallel with early stopping
-        max_to_process = min(10, len(ranked_articles))  # Process fewer since News API is better targeted
+        max_to_process = min(10, len(ranked_articles))
         required_successful = 3
         
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = []
             
-            # Submit articles for processing
             for i, article in enumerate(ranked_articles[:max_to_process]):
                 futures.append(executor.submit(
                     process_article_optimized,
@@ -528,7 +530,6 @@ def analyze_trends():
                     seen_hashes
                 ))
             
-            # Process results as they complete
             for future in concurrent.futures.as_completed(futures):
                 try:
                     summary, is_processed, is_successful, proc_time = future.result()
@@ -544,10 +545,8 @@ def analyze_trends():
                                 processed_articles_cache[cache_key].add(article_hash)
                             successful += 1
                             
-                            # Early stopping
                             if successful >= required_successful:
                                 print(f"🎯 Reached target of {required_successful} successful articles")
-                                # Cancel remaining futures
                                 for f in futures:
                                     if not f.done():
                                         f.cancel()
@@ -559,7 +558,7 @@ def analyze_trends():
         processing_time = time.time() - processing_start
         print(f"✅ Processed {processed} articles, {successful} successful - Time: {processing_time:.2f}s")
         
-        # ===== STEP 4: Generate insights =====
+        # Generate Insights (Your existing logic)
         insights_start = time.time()
         aggregate_insights = None
         
@@ -578,45 +577,45 @@ def analyze_trends():
         insights_time = time.time() - insights_start
         total_time = time.time() - overall_start_time
         
-        # Performance summary
-        print(f"🏁 OPTIMIZED execution completed in {total_time:.2f}s")
-        print(f"   News API fetch: {news_api_time:.2f}s ({news_api_time/total_time*100:.1f}%)")
-        print(f"   Article ranking: {ranking_time:.2f}s ({ranking_time/total_time*100:.1f}%)")
-        print(f"   Article processing: {processing_time:.2f}s ({processing_time/total_time*100:.1f}%)")
-        print(f"   Insights generation: {insights_time:.2f}s ({insights_time/total_time*100:.1f}%)")
-        
+        # Return with ORIGINAL timing structure that your frontend expects
         return jsonify({
             "success": True,
             "results": results,
             "aggregate_insights": aggregate_insights,
-            "filters": filters,
-            "optimization_info": {
-                "method": "News API + Combined Summarization",
-                "performance_improvement": "~70% faster than web scraping"
-            },
+            "source": source_type,  # Added source indicator
             "stats": {
-                "total_articles_fetched": len(articles),
-                "processed": processed,
-                "successful": successful,
                 "timing": {
-                    "total": total_time,
-                    "news_api_fetch": news_api_time,
-                    "article_ranking": ranking_time,
-                    "article_processing": processing_time,
-                    "insights_generation": insights_time
+                    "total": round(total_time, 2),
+                    "collection": round(collection_time, 2),
+                    "processing": round(processing_time, 2),
+                    "insights": round(insights_time, 2)
+                },
+                "articles": {
+                    "total_fetched": len(articles),
+                    "processed": processed,
+                    "successful": successful,
+                    "required": required_successful
                 }
             }
         })
         
     except Exception as e:
-        total_time = time.time() - overall_start_time
-        print(f"❌ Pipeline error: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "timing": {"total": total_time}
-        }), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/api/company-insights', methods=['POST'])
+
+
+
+
+
+
+
+
+
+
+
+
+
+@app.route('/api/trends/company-insights', methods=['POST'])
 def get_company_insights():
     """Generate company-specific insights based on news articles"""
     try:
@@ -816,7 +815,7 @@ Summaries:
             "company_name": data.get("company_name", "Unknown company")
         }), 500
 
-@app.route('/api/test-news-api', methods=['GET'])
+@app.route('/api/trends/test-news-api', methods=['GET'])
 def test_news_api():
     """Test News API connectivity"""
     try:
@@ -837,7 +836,7 @@ def test_news_api():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/clear-cache', methods=['POST'])
+@app.route('/api/trends/clear-cache', methods=['POST'])
 def clear_cache():
     """Clear the processed articles cache"""
     global processed_articles_cache, article_content_cache
@@ -859,7 +858,7 @@ def clear_cache():
     
     return jsonify({"message": "No cache to clear"})
 
-@app.route('/api/generate-competitor-landscape', methods=['POST'])
+@app.route('/api/trends/generate-competitor-landscape', methods=['POST'])
 def generate_competitor_data():
     """Generate competitor landscape from previously analyzed articles"""
     try:
@@ -898,7 +897,7 @@ def generate_competitor_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/generate-slide-deck', methods=['POST'])
+@app.route('/api/trends/generate-slide-deck', methods=['POST'])
 def generate_slide_deck():
     """Generate a slide deck from analysis results"""
     try:
@@ -1150,7 +1149,7 @@ def parse_slide_content(content):
 #     return slides
 
 # MODIFIED ROUTE: Now uses Enhanced PPT Generator
-@app.route('/api/generate-ppt', methods=['POST'])
+@app.route('/api/trends/generate-ppt', methods=['POST'])
 def generate_ppt():
     """Generate PowerPoint presentation with dynamic charts from real data"""
     try:
@@ -1205,7 +1204,7 @@ def generate_ppt():
         return jsonify({"error": str(e)}), 500
 
 # BACKUP ROUTE: Keep your original basic PPT method
-@app.route('/api/generate-basic-ppt', methods=['POST'])
+@app.route('/api/trends/generate-basic-ppt', methods=['POST'])
 def generate_basic_ppt():
     """Generate basic PowerPoint presentation (original method)"""
     try:

@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 
 // Enhanced Glass Card Component
 const GlassCard = ({ children, className, hoverEffect = true }) => {
-  const baseClasses = `rounded-3xl backdrop-blur-lg border border-gray-800/40 transition-all duration-700 bg-black/50`;
+  // const baseClasses = `rounded-3xl backdrop-blur-lg border border-gray-800/40 transition-all duration-700 bg-black/50`;
+  const baseClasses = `rounded-3xl backdrop-blur-lg border border-[#5b84b1]/20 transition-all duration-700 bg-[#f4f4f4]/90 text-black`;
+
   
   const hoverClasses = hoverEffect 
     ? `hover:transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/30` 
